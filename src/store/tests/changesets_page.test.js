@@ -82,6 +82,43 @@ describe('changesets_page fetchChangesetsPageSaga', () => {
       .put.actionType('INIT_MODAL')
       .run();
   });
+
+  it('does not show a modal for anonymous authentication errors', async () => {
+    const error = new Error(
+      'Authentication error. Sign in again and repeat the operation.'
+    );
+    error.status = 401;
+    const result = await expectSaga(fetchChangesetsPageSaga, 0, true)
+      .provide([
+        [select(filtersSelector), filters],
+        [select(pageIndexSelector), 0],
+        [select(aoiIdSelector), null],
+        [select(tokenSelector), null],
+        [matchers.call.fn(fetchChangesetsPage), throwError(error)]
+      ])
+      .put.actionType(CHANGESETS_PAGE.error)
+      .run();
+    const putTypes = result.effects.put
+      .map(e => e && e.payload && e.payload.action && e.payload.action.type)
+      .filter(Boolean);
+    expect(putTypes).not.toContain('INIT_MODAL');
+  });
+
+  it('shows a modal for anonymous non-authentication errors', async () => {
+    const error = new Error('Server error.');
+    error.status = 500;
+    return await expectSaga(fetchChangesetsPageSaga, 0, true)
+      .provide([
+        [select(filtersSelector), filters],
+        [select(pageIndexSelector), 0],
+        [select(aoiIdSelector), null],
+        [select(tokenSelector), null],
+        [matchers.call.fn(fetchChangesetsPage), throwError(error)]
+      ])
+      .put.actionType(CHANGESETS_PAGE.error)
+      .put.actionType('INIT_MODAL')
+      .run();
+  });
 });
 
 describe('changesets_page modifyChangesetPageSaga', () => {
