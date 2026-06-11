@@ -114,6 +114,8 @@ export function* fetchChangesetsPageSaga({
       })
     );
   } catch (error) {
+    const token = yield select(tokenSelector);
+    const shouldShowError = token || error.status !== 401;
     yield put(
       action(CHANGESETS_PAGE.error, {
         pageIndex: oldPageIndex,
@@ -121,14 +123,16 @@ export function* fetchChangesetsPageSaga({
       })
     );
     error.name = `Failed to load page ${pageIndex}`;
-    yield put(
-      modal({
-        error,
-        callback: action,
-        callbackLabel: 'Retry',
-        callbackArgs: [CHANGESETS_PAGE.fetch, { pageIndex }]
-      })
-    );
+    if (shouldShowError) {
+      yield put(
+        modal({
+          error,
+          callback: action,
+          callbackLabel: 'Retry',
+          callbackArgs: [CHANGESETS_PAGE.fetch, { pageIndex }]
+        })
+      );
+    }
   }
 }
 
